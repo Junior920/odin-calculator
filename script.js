@@ -1,3 +1,9 @@
+let firstNumber = "";
+let operator = "";
+let secondNumber = "";
+let shouldResetDisplay = false;
+let lastButtonWasOperator = false;
+
 function add(a, b) {
   return a + b;
 }
@@ -17,9 +23,6 @@ function divide(a, b) {
   return a / b;
 }
 
-let firstNumber = "";
-let operator = "";
-let secondNumber = "";
 
 function operate(operator, a, b) {
   a = parseFloat(a);
@@ -42,7 +45,9 @@ function operate(operator, a, b) {
   }
 }
 
-const buttons = document.querySelectorAll(".btn");
+const buttons = document.querySelectorAll(
+  ".btn:not(.operator):not(.equal):not(.clear):not(.delete)"
+);
 const display = document.querySelector("#display");
 const operatorButtons = document.querySelectorAll(".operator");
 const equalsButton = document.querySelector("#equals");
@@ -54,7 +59,22 @@ buttons.forEach(button => {
     const buttonValue = button.dataset.value;
 
     if (buttonValue !== undefined) {
+
+      // Prevent multiple decimal points
+      if (buttonValue === "." && display.value.includes(".")) {
+        return;
+      }
+
+      // Clear old answer before neq number input.
+      if (shouldResetDisplay) {
+        display.value = "";
+
+        shouldResetDisplay = false;
+      }
+      
       display.value += buttonValue;
+      lastButtonWasOperator = false;
+      
     }
   });
 });
@@ -62,23 +82,61 @@ buttons.forEach(button => {
 operatorButtons.forEach((button) => {
   button.addEventListener("click", () => {
 
-    firstNumber = display.value;
+    //prevent operator spam
+    if (lastButtonWasOperator) {
+      operator = button.dataset.value;
+      return;
+    }
+
+    // If there's already an operator and a second number, calculate the result first
+    if (operator !== "" && firstNumber !== "" && display.value !== "") {
+      secondNumber = display.value;
+      const result = operate(operator, firstNumber, secondNumber);
+      display.value = Math.round(result * 1000) / 1000;
+
+      //store answer in memory
+      firstNumber = display.value;
+
+    } else {
+      //first operation
+      firstNumber = display.value;
+    }
+
+    //store new operator
     operator = button.dataset.value;
-    display.value = "";
+
+    lastButtonWasOperator = true;
+    
+    shouldResetDisplay = true;
   });
 });
 
 equalsButton.addEventListener("click", () => {
 
   secondNumber = display.value;
+
   const result = operate(operator, firstNumber, secondNumber);
-  display.value = result;
+
+  display.value = Math.round(result * 1000) / 1000; // Round to 3 decimal places
+
+  //store answer in memory
+  firstNumber = display.value;
+
+  operator = "";
+
+  shouldResetDisplay = true;
+  lastButtonWasOperator = false;
+
 });
 
 clearButton.addEventListener("click", () => {
   firstNumber = "";
   operator = "";
   secondNumber = "";
+  
+  shouldResetDisplay = false;
+  lastButtonWasOperator = false;
+
   display.value = "";
 });
 
